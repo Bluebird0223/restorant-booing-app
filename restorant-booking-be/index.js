@@ -8,6 +8,8 @@ const { connectDatabase } = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 const morgan = require('morgan');
 const RestaurantRouter = require('./routes/restaurant.routes');
+const tableRouter = require('./routes/table.routes');
+const redis = require('./config/redis');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,6 +42,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/restaurants', RestaurantRouter);
+app.use('/api/tables', tableRouter);
 
 // Global error handler
 app.use(errorHandler);
@@ -48,6 +51,11 @@ app.use(errorHandler);
 async function startServer() {
   try {
     await connectDatabase();
+
+    // Test Redis connection
+    await redis.ping();
+    console.log('📡 Redis is ready');
+
     app.listen(PORT, () => {
       console.log(`🚀 Server is running on port ${PORT}`);
       console.log(`📊 Health check available at http://localhost:${PORT}/health`);

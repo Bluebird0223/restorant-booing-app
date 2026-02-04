@@ -55,7 +55,21 @@ const createRestaurant = async (req, res) => {
 
 const getRestaurants = async (req, res) => {
     try {
-        const restaurants = await Restaurant.findAll({});
+        const restaurants = await Restaurant.findAll({
+            attributes: {
+                include: [
+                    [
+                        sequelize.literal(`(
+          SELECT COUNT(*)
+          FROM tables
+          WHERE tables.restaurantId = "Restaurant"."id"
+          AND tables."isActive" = true
+        )`),
+                        'tableCount'
+                    ]
+                ]
+            }
+        });
         if (!restaurants) {
             return res.status(404).json({
                 success: false,
