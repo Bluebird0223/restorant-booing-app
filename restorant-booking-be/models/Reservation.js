@@ -33,8 +33,8 @@ const Reservation = sequelize.define('Reservation', {
         allowNull: false
     },
     status: {
-        type: DataTypes.ENUM('confirmed', 'cancelled'),
-        defaultValue: 'confirmed'
+        type: DataTypes.ENUM('pending', 'confirmed', 'cancelled', 'accepted', 'rejected', 'no-show'),
+        defaultValue: 'pending'
     }
 }, {
     tableName: 'reservations',

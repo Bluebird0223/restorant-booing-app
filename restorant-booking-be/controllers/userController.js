@@ -1,9 +1,9 @@
 
-const { User } = require('./models');
+const { User } = require('../models');
 
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find({});
+    const users = await User.findAll();
     res.json({
       success: true,
       count: users.length,

@@ -115,3 +115,87 @@ exports.createReservation = async (req, res) => {
 
     res.status(409).json({ message: 'No available tables for this slot' });
 };
+
+exports.cancelReservation = async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const reservation = await Reservation.findByPk(id);
+
+    if (!reservation) {
+        return res.status(404).json({ message: 'Reservation not found' });
+    }
+
+    if (reservation.userId !== userId) {
+        return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    if (reservation.status !== 'confirmed') {
+        return res.status(400).json({ message: 'Reservation cannot be cancelled' });
+    }
+
+    const now = new Date();
+    if (now >= reservation.startTime) {
+        return res.status(400).json({ message: 'Too late to cancel' });
+    }
+
+    reservation.status = 'cancelled';
+    await reservation.save();
+
+    res.json({ message: 'Reservation cancelled successfully' });
+};
+
+exports.getRestaurantReservations = async (req, res) => {
+    try {
+        const restaurantId = req.restaurant.id;
+        const reservations = await Reservation.findAll({
+            where: { restaurantId },
+            include: [
+                { model: Table, attributes: ['name', 'capacity'] },
+                { model: User, attributes: ['name', 'email'] }
+            ],
+            order: [['startTime', 'ASC']]
+        });
+
+        res.json(reservations);
+    } catch (error) {
+        console.error('Get restaurant reservations error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.updateReservationStatus = async (req, res) => {
+    try {
+        const { id, type } = req.params;
+        const restaurantId = req.restaurant.id;
+
+        const reservation = await Reservation.findOne({
+            where: { id, restaurantId }
+        });
+
+        if (!reservation) {
+            return res.status(404).json({ message: 'Reservation not found' });
+        }
+
+        const statusMap = {
+            'accept': 'accepted',
+            'reject': 'rejected',
+            'no-show': 'no-show',
+            'confirm': 'confirmed',
+            'cancel': 'cancelled'
+        };
+
+        const newStatus = statusMap[type];
+        if (!newStatus) {
+            return res.status(400).json({ message: 'Invalid action type' });
+        }
+
+        reservation.status = newStatus;
+        await reservation.save();
+
+        res.json({ message: `Reservation ${newStatus} successfully`, reservation });
+    } catch (error) {
+        console.error('Update reservation status error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};

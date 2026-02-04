@@ -3,6 +3,8 @@ const Restaurant = require('../models/Restaurant');
 const generateToken = require('../utils/generateToken');
 const restaurantSchema = require('../utils/restaurantValidation');
 const bcrypt = require('bcrypt');
+const { Op } = require('sequelize');
+const { sequelize } = require('../config/database');
 
 const createRestaurant = async (req, res) => {
     try {
@@ -55,7 +57,18 @@ const createRestaurant = async (req, res) => {
 
 const getRestaurants = async (req, res) => {
     try {
+        const { search, type } = req.query;
+        const whereClause = {};
+
+        if (search) {
+            whereClause.name = { [Op.iLike]: `%${search}%` };
+        }
+        if (type) {
+            whereClause.type = type;
+        }
+
         const restaurants = await Restaurant.findAll({
+            where: whereClause,
             attributes: {
                 include: [
                     [
@@ -92,7 +105,7 @@ const getRestaurants = async (req, res) => {
 
 const getRestaurantById = async (req, res) => {
     try {
-        const restaurant = await Restaurant.findById(req.params.id);
+        const restaurant = await Restaurant.findByPk(req.params.id);
         if (!restaurant) {
             return res.status(404).json({
                 success: false,
@@ -104,7 +117,30 @@ const getRestaurantById = async (req, res) => {
             data: restaurant
         });
     } catch (error) {
-        console.error('Get restaurant by ID error:', error);
+        // console.error('Get restaurant by ID error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+};
+
+const getAllRestaurants = async (req, res) => {
+    try {
+        const restaurants = await Restaurant.findAll();
+        if (!restaurants) {
+            return res.status(404).json({
+                success: false,
+                message: 'Restaurants not found'
+            });
+        }
+        res.json({
+            success: true,
+            count: restaurants.length,
+            data: restaurants
+        });
+    } catch (error) {
+        console.error('Get all restaurants error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error'
@@ -196,4 +232,4 @@ const login = async (req, res) => {
     }
 };
 
-module.exports = { createRestaurant, getRestaurants, getRestaurantById, updateRestaurant, deleteRestaurant, login };
+module.exports = { createRestaurant, getRestaurants, getRestaurantById, updateRestaurant, deleteRestaurant, login, getAllRestaurants };

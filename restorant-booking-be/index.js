@@ -9,6 +9,8 @@ const errorHandler = require('./middleware/errorHandler');
 const morgan = require('morgan');
 const RestaurantRouter = require('./routes/restaurant.routes');
 const tableRouter = require('./routes/table.routes');
+const authRouter = require('./routes/auth');
+const reservationRouter = require('./routes/reservation.routes');
 const redis = require('./config/redis');
 
 const app = express();
@@ -23,7 +25,10 @@ const limiter = rateLimit({
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
 app.use(morgan('dev'));
 
 app.use(limiter);
@@ -41,8 +46,10 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/auth', authRouter);
 app.use('/api/restaurants', RestaurantRouter);
 app.use('/api/tables', tableRouter);
+app.use('/api/reservations', reservationRouter);
 
 // Global error handler
 app.use(errorHandler);
